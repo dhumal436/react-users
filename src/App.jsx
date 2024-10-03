@@ -1,6 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group } from 'react-konva';
-
+// import elementImages from './elementImages';
+const elementImages = [
+  {
+    name: "Star",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  },
+  {
+    name: "Heart",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  },
+  {
+    name: "Cloud",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  },
+  {
+    name: "Tree",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  },
+  {
+    name: "Sun",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  },
+  {
+    name: "Moon",
+    url: "https://www.transparentpng.com/thumb/flower/flowers-photo-png-34.png"
+  }
+];
 const CANVAS_HEIGHT = 1080;
 const CANVAS_WIDTH = 1080;
 const SNAP_THRESHOLD = 10; // Distance in pixels to trigger snapping
@@ -164,6 +190,85 @@ const FrameComponent = ({ shapeProps, isSelected, onSelect, onChange, onDragMove
   );
 };
 
+const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDragMove, snapToGrid, gridSize }) => {
+  const elementRef = useRef();
+  const trRef = useRef();
+
+  useEffect(() => {
+    if (isSelected) {
+      trRef.current.nodes([elementRef.current]);
+      trRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  const snapSizeToGrid = (size) => {
+    return Math.round(size / gridSize) * gridSize;
+  };
+
+  return (
+    <>
+      <KonvaImage
+        onClick={onSelect}
+        onTap={onSelect}
+        image={elementProps.image}
+        ref={elementRef}
+        {...elementProps}
+        draggable
+        onDragMove={(e) => {
+          const newPos = e.target.position();
+          const snappedPos = snapToGrid(newPos);
+          e.target.position(snappedPos);
+          onDragMove(e, snappedPos);
+        }}
+        onDragEnd={(e) => {
+          const snappedPos = snapToGrid(e.target.position());
+          onChange({
+            ...elementProps,
+            x: snappedPos.x,
+            y: snappedPos.y,
+          });
+        }}
+        onTransformEnd={(e) => {
+          const node = elementRef.current;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+
+          node.scaleX(1);
+          node.scaleY(1);
+
+          const snappedPos = snapToGrid({ x: node.x(), y: node.y() });
+          const snappedWidth = snapSizeToGrid(Math.max(5, node.width() * scaleX));
+          const snappedHeight = snapSizeToGrid(Math.max(5, node.height() * scaleY));
+
+          onChange({
+            ...elementProps,
+            x: snappedPos.x,
+            y: snappedPos.y,
+            width: snappedWidth,
+            height: snappedHeight,
+            rotation: node.rotation(),
+          });
+        }}
+      />
+      {isSelected && (
+        <Transformer
+          ref={trRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            const snappedBox = {
+              ...newBox,
+              width: snapSizeToGrid(newBox.width),
+              height: snapSizeToGrid(newBox.height),
+            };
+            return snappedBox.width < 5 || snappedBox.height < 5 ? oldBox : snappedBox;
+          }}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+          rotationSnapTolerance={5}
+        />
+      )}
+    </>
+  );
+};
+
 const TemplateCreator = () => {
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
   const [frames, setFrames] = useState([]);
@@ -178,6 +283,7 @@ const TemplateCreator = () => {
   const [gridSize, setGridSize] = useState(60);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [elements, setElements] = useState([]);
 
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
@@ -210,6 +316,33 @@ const TemplateCreator = () => {
     setFrames(updatedFrames);
   };
 
+  const handleAddElement = (imageUrl) => {
+    const img = new window.Image();
+    img.src = imageUrl;
+    img.onload = () => {
+      const newElement = {
+        x: 0,
+        y: 0,
+        width: img.width,
+        height: img.height,
+        rotation: 0,
+        image: img,
+        id: `element-${elements.length + 1}`,
+      };
+      setElements([...elements, newElement]);
+    };
+  };
+
+  const handleElementChange = (newAttrs) => {
+    const updatedElements = elements.map((element) => {
+      if (element.id === newAttrs.id) {
+        return newAttrs;
+      }
+      return element;
+    });
+    setElements(updatedElements);
+  };
+
   const generateJSON = () => {
     const template = {
       name: "Custom Template",
@@ -220,6 +353,14 @@ const TemplateCreator = () => {
         width: Math.ceil(frame.width),
         height: Math.ceil(frame.height),
         rotation: frame.rotation,
+      })),
+      elements: elements.map((element) => ({
+        x: element.x / canvasWidth,
+        y: element.y / CANVAS_HEIGHT,
+        width: Math.ceil(element.width),
+        height: Math.ceil(element.height),
+        rotation: element.rotation,
+        imageUrl: element.image.src,
       })),
     };
     return JSON.stringify([template], null, 2);
@@ -333,6 +474,12 @@ const TemplateCreator = () => {
           height={window.innerHeight}
           ref={stageRef}
           draggable={!isDraggingImage}
+          onWheel={handleZoom}
+          scaleX={scale}
+          scaleY={scale}
+          x={position.x}
+          y={position.y}
+          onDragEnd={handleDragEnd}
         >
           <Layer>
             <Rect width={canvasWidth} height={CANVAS_HEIGHT} fill="gray" />
@@ -368,10 +515,22 @@ const TemplateCreator = () => {
                 gridSize={gridSize}
               />
             ))}
+            {elements.map((element, i) => (
+              <ElementComponent
+                key={element.id}
+                elementProps={element}
+                isSelected={element.id === selectedId}
+                onSelect={() => handleSelectShape(element.id)}
+                onChange={handleElementChange}
+                onDragMove={handleDragMove}
+                snapToGrid={snapToGrid}
+                gridSize={gridSize}
+              />
+            ))}
           </Layer>
         </Stage>
       </div>
-      <div className="p-4 bg-gray-200">
+      <div className="p-4 bg-gray-200 overflow-y-auto" style={{ width: '300px' }}>
         <div className="flex justify-between mb-4">
           <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleExtendCanvas}>
             Extend Canvas
@@ -459,6 +618,20 @@ const TemplateCreator = () => {
           >
             Load Image from URL
           </button>
+        </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Add Elements</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {elementImages.map((image, index) => (
+              <img
+                key={index}
+                src={image.url}
+                alt={image.name}
+                className="w-full h-auto cursor-pointer border border-gray-300 hover:border-blue-500"
+                onClick={() => handleAddElement(image.url)}
+              />
+            ))}
+          </div>
         </div>
         <textarea
           className="w-full h-40 p-2 border rounded"
