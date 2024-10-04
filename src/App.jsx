@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group } from 'react-konva';
+import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group, Text } from 'react-konva';
 // import elementImages from './elementImages';
 const elementImages = [
   {
@@ -204,7 +204,6 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
   const snapSizeToGrid = (size) => {
     return Math.round(size / gridSize) * gridSize;
   };
-
   return (
     <>
       <KonvaImage
@@ -250,6 +249,7 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
           });
         }}
       />
+
       {isSelected && (
         <Transformer
           ref={trRef}
@@ -284,7 +284,107 @@ const TemplateCreator = () => {
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [elements, setElements] = useState([]);
-
+  const [pastedImages, setPastedImages] = useState([]);
+useEffect(() =>{
+  [
+    {
+      "x": 152.72377014160156,
+      "y": 202.86599731445312,
+      "width": 705.93017578125,
+      "height": 274.9111022949219,
+      "rotation": 0,
+      "imageUrl": "https://static.canva.com/web/images/87e22a62965f141aa08e93699b0b3527.jpg"
+    },
+    {
+      "x": 409.2992858886719,
+      "y": 202.86599731445312,
+      "width": 192.77999877929688,
+      "height": 274.9111022949219,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/ncHh0/MAD6JXncHh0/1/s.png"
+    },
+    {
+      "x": 679.989990234375,
+      "y": 133.947265625,
+      "width": 47.6820068359375,
+      "height": 268.79998779296875,
+      "rotation": 0,
+      "imageUrl": "blob:https://www.canva.com/d8555a72-da60-4da0-8cda-003c502a93d3"
+    },
+    {
+      "x": 262.3437805175781,
+      "y": 394.71453857421875,
+      "width": 705.93017578125,
+      "height": 274.9111328125,
+      "rotation": 0,
+      "imageUrl": "https://static.canva.com/web/images/87e22a62965f141aa08e93699b0b3527.jpg"
+    },
+    {
+      "x": 518.9193115234375,
+      "y": 394.71453857421875,
+      "width": 192.77996826171875,
+      "height": 274.9111328125,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/ncHh0/MAD6JXncHh0/1/s.png"
+    },
+    {
+      "x": 490.2583923339844,
+      "y": 187.3957061767578,
+      "width": 30.860137939453125,
+      "height": 30.936721801757812,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/E3a_Y/MAEw25E3a_Y/1/t.png"
+    },
+    {
+      "x": 599.87841796875,
+      "y": 380.8502502441406,
+      "width": 30.860107421875,
+      "height": 30.93670654296875,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/E3a_Y/MAEw25E3a_Y/1/t.png"
+    },
+    {
+      "x": 585.280029296875,
+      "y": 250.15576171875,
+      "width": 109.6156005859375,
+      "height": 130.69219970703125,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/6MLY0/MAEeEN6MLY0/1/t.png"
+    },
+    {
+      "x": 397.0818176269531,
+      "y": 536.8316650390625,
+      "width": 47.682037353515625,
+      "height": 268.79998779296875,
+      "rotation": 0,
+      "imageUrl": "blob:https://www.canva.com/d8555a72-da60-4da0-8cda-003c502a93d3"
+    },
+    {
+      "x": 409.29998779296875,
+      "y": 507.7557678222656,
+      "width": 135.7672119140625,
+      "height": 161.86953735351562,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/6MLY0/MAEeEN6MLY0/1/t.png"
+    },
+    {
+      "x": 161.88180541992188,
+      "y": 187.3957061767578,
+      "width": 302.3999938964844,
+      "height": 58.96406555175781,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/w4PqQ/MAFG08w4PqQ/1/s.png"
+    },
+    {
+      "x": 640.0899658203125,
+      "y": 640.1416625976562,
+      "width": 302.4000244140625,
+      "height": 58.96405029296875,
+      "rotation": 0,
+      "imageUrl": "https://media-public.canva.com/w4PqQ/MAFG08w4PqQ/1/s.png"
+    }
+  ].forEach(handleAddElementXY)
+},[])
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
   };
@@ -332,6 +432,26 @@ const TemplateCreator = () => {
       setElements([...elements, newElement]);
     };
   };
+
+  const handleAddElementXY = ({imageUrl, x,y,height,width,rotation}) => {
+    console.log({x,y})
+    const img = new window.Image();
+    img.src = imageUrl;
+    img.onload = () => {
+      const newElement = {
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        rotation: rotation,
+        image: img,
+        id: `element-${elements.length + 1}`,
+      };
+      elements.push(newElement)
+      // setElements([...elements, newElement]);
+    };
+  };
+
 
   const handleElementChange = (newAttrs) => {
     const updatedElements = elements.map((element) => {
@@ -465,6 +585,76 @@ const TemplateCreator = () => {
       y: e.target.y()
     });
   };
+
+  const handlePasteImages = (event) => {
+    event.preventDefault();
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    const imageItems = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf("image") !== -1) {
+        imageItems.push(item.getAsFile());
+      } else if (item.type === "text/html") {
+        item.getAsString((htmlString) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlString, 'text/html');
+          const images = doc.getElementsByTagName('img');
+          for (let j = 0; j < images.length; j++) {
+            const imgSrc = images[j].src;
+            imageItems.push(imgSrc);
+          }
+          processImageItems(imageItems);
+        });
+        return; // Exit early as we're handling HTML asynchronously
+      }
+    }
+
+    processImageItems(imageItems);
+  };
+
+  const processImageItems = (items) => {
+    const newPastedImages = [];
+
+    items.forEach((item) => {
+      if (typeof item === 'string') {
+        // It's already a URL
+        newPastedImages.push(item);
+      } else {
+        // It's a File object
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPastedImages.push(e.target.result);
+          if (newPastedImages.length === items.length) {
+            setPastedImages(prevImages => [...prevImages, ...newPastedImages]);
+          }
+        };
+        reader.readAsDataURL(item);
+      }
+    });
+
+    // If all items were strings (URLs), update state immediately
+    if (newPastedImages.length === items.length) {
+      setPastedImages(prevImages => [...prevImages, ...newPastedImages]);
+    }
+  };
+
+  const addPastedImage = (imageUrl) => {
+    handleAddElement(imageUrl);
+    setPastedImages(prevImages => prevImages.filter(img => img !== imageUrl));
+  };
+
+  const addAllPastedImages = () => {
+    pastedImages.forEach(imageUrl => handleAddElement(imageUrl));
+    setPastedImages([]);
+  };
+
+  useEffect(() => {
+    document.addEventListener('paste', handlePasteImages);
+    return () => {
+      document.removeEventListener('paste', handlePasteImages);
+    };
+  }, []);
 
   return (
     <div className="flex flex-row h-screen">
@@ -633,6 +823,38 @@ const TemplateCreator = () => {
             ))}
           </div>
         </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Pasted Images</h3>
+          <p className="text-sm text-gray-600 mb-2">
+            Copy images or HTML elements with images from any website and paste them here (Ctrl+V or Cmd+V)
+          </p>
+          {pastedImages.length > 0 && (
+            <div className="mb-2">
+              {pastedImages.map((imageUrl, index) => (
+                <div key={index} className="mb-2">
+                  <img src={imageUrl} alt={`Pasted ${index}`} className="w-full h-auto" />
+                  <button
+                    onClick={() => addPastedImage(imageUrl)}
+                    className="mt-2 bg-blue-500 text-white px-4 py-2 rounded w-full"
+                  >
+                    Add This Image
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addAllPastedImages}
+                className="mt-2 bg-green-500 text-white px-4 py-2 rounded w-full"
+              >
+                Add All Images
+              </button>
+            </div>
+          )}
+          {pastedImages.length === 0 && (
+            <div className="border-2 border-dashed border-gray-300 p-4 text-center">
+              <Text text="Paste your images here" />
+            </div>
+          )}
+        </div>
         <textarea
           className="w-full h-40 p-2 border rounded"
           value={generateJSON()}
@@ -642,5 +864,6 @@ const TemplateCreator = () => {
     </div>
   );
 };
+
 
 export default TemplateCreator;
