@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group, Text } from 'react-konva';
+import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars } from 'react-icons/fa';
 // import elementImages from './elementImages';
 const elementImages = [
   {
@@ -110,7 +111,7 @@ const Grid = ({ width, height, mainGridColor, thirdsGridColor, gridSize }) => {
   return <Group>{lines}</Group>;
 };
 
-const FrameComponent = ({ shapeProps, isSelected, onSelect, onChange, onDragMove, snapToGrid,gridSize }) => {
+const FrameComponent = ({ shapeProps, isSelected, onSelect, onChange, onDragMove, snapToGrid, gridSize, onDelete }) => {
   const shapeRef = useRef();
   const trRef = useRef();
 
@@ -171,26 +172,37 @@ const FrameComponent = ({ shapeProps, isSelected, onSelect, onChange, onDragMove
         }}
       />
       {isSelected && (
-        <Transformer
-          ref={trRef}
-          boundBoxFunc={(oldBox, newBox) => {
-            // Snap to grid while resizing
-            const snappedBox = {
-              ...newBox,
-              width: snapSizeToGrid(newBox.width),
-              height: snapSizeToGrid(newBox.height),
-            };
-            return snappedBox.width < 5 || snappedBox.height < 5 ? oldBox : snappedBox;
-          }}
-          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
-          rotationSnapTolerance={5}
-        />
+        <>
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              // Snap to grid while resizing
+              const snappedBox = {
+                ...newBox,
+                width: snapSizeToGrid(newBox.width),
+                height: snapSizeToGrid(newBox.height),
+              };
+              return snappedBox.width < 5 || snappedBox.height < 5 ? oldBox : snappedBox;
+            }}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+            rotationSnapTolerance={5}
+          />
+          <Text
+            text="×"
+            x={shapeProps.x + shapeProps.width - 20}
+            y={shapeProps.y}
+            fontSize={20}
+            fill="red"
+            onClick={() => onDelete(shapeProps.id)}
+            onTap={() => onDelete(shapeProps.id)}
+          />
+        </>
       )}
     </>
   );
 };
 
-const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDragMove, snapToGrid, gridSize }) => {
+const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDragMove, snapToGrid, gridSize, onDelete }) => {
   const elementRef = useRef();
   const trRef = useRef();
 
@@ -251,19 +263,30 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
       />
 
       {isSelected && (
-        <Transformer
-          ref={trRef}
-          boundBoxFunc={(oldBox, newBox) => {
-            const snappedBox = {
-              ...newBox,
-              width: snapSizeToGrid(newBox.width),
-              height: snapSizeToGrid(newBox.height),
-            };
-            return snappedBox.width < 5 || snappedBox.height < 5 ? oldBox : snappedBox;
-          }}
-          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
-          rotationSnapTolerance={5}
-        />
+        <>
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              const snappedBox = {
+                ...newBox,
+                width: snapSizeToGrid(newBox.width),
+                height: snapSizeToGrid(newBox.height),
+              };
+              return snappedBox.width < 5 || snappedBox.height < 5 ? oldBox : snappedBox;
+            }}
+            rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+            rotationSnapTolerance={5}
+          />
+          <Text
+            text="×"
+            x={elementProps.x + elementProps.width - 20}
+            y={elementProps.y}
+            fontSize={20}
+            fill="red"
+            onClick={() => onDelete(elementProps.id)}
+            onTap={() => onDelete(elementProps.id)}
+          />
+        </>
       )}
     </>
   );
@@ -285,106 +308,9 @@ const TemplateCreator = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [elements, setElements] = useState([]);
   const [pastedImages, setPastedImages] = useState([]);
-useEffect(() =>{
-  [
-    {
-      "x": 152.72377014160156,
-      "y": 202.86599731445312,
-      "width": 705.93017578125,
-      "height": 274.9111022949219,
-      "rotation": 0,
-      "imageUrl": "https://static.canva.com/web/images/87e22a62965f141aa08e93699b0b3527.jpg"
-    },
-    {
-      "x": 409.2992858886719,
-      "y": 202.86599731445312,
-      "width": 192.77999877929688,
-      "height": 274.9111022949219,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/ncHh0/MAD6JXncHh0/1/s.png"
-    },
-    {
-      "x": 679.989990234375,
-      "y": 133.947265625,
-      "width": 47.6820068359375,
-      "height": 268.79998779296875,
-      "rotation": 0,
-      "imageUrl": "blob:https://www.canva.com/d8555a72-da60-4da0-8cda-003c502a93d3"
-    },
-    {
-      "x": 262.3437805175781,
-      "y": 394.71453857421875,
-      "width": 705.93017578125,
-      "height": 274.9111328125,
-      "rotation": 0,
-      "imageUrl": "https://static.canva.com/web/images/87e22a62965f141aa08e93699b0b3527.jpg"
-    },
-    {
-      "x": 518.9193115234375,
-      "y": 394.71453857421875,
-      "width": 192.77996826171875,
-      "height": 274.9111328125,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/ncHh0/MAD6JXncHh0/1/s.png"
-    },
-    {
-      "x": 490.2583923339844,
-      "y": 187.3957061767578,
-      "width": 30.860137939453125,
-      "height": 30.936721801757812,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/E3a_Y/MAEw25E3a_Y/1/t.png"
-    },
-    {
-      "x": 599.87841796875,
-      "y": 380.8502502441406,
-      "width": 30.860107421875,
-      "height": 30.93670654296875,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/E3a_Y/MAEw25E3a_Y/1/t.png"
-    },
-    {
-      "x": 585.280029296875,
-      "y": 250.15576171875,
-      "width": 109.6156005859375,
-      "height": 130.69219970703125,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/6MLY0/MAEeEN6MLY0/1/t.png"
-    },
-    {
-      "x": 397.0818176269531,
-      "y": 536.8316650390625,
-      "width": 47.682037353515625,
-      "height": 268.79998779296875,
-      "rotation": 0,
-      "imageUrl": "blob:https://www.canva.com/d8555a72-da60-4da0-8cda-003c502a93d3"
-    },
-    {
-      "x": 409.29998779296875,
-      "y": 507.7557678222656,
-      "width": 135.7672119140625,
-      "height": 161.86953735351562,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/6MLY0/MAEeEN6MLY0/1/t.png"
-    },
-    {
-      "x": 161.88180541992188,
-      "y": 187.3957061767578,
-      "width": 302.3999938964844,
-      "height": 58.96406555175781,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/w4PqQ/MAFG08w4PqQ/1/s.png"
-    },
-    {
-      "x": 640.0899658203125,
-      "y": 640.1416625976562,
-      "width": 302.4000244140625,
-      "height": 58.96405029296875,
-      "rotation": 0,
-      "imageUrl": "https://media-public.canva.com/w4PqQ/MAFG08w4PqQ/1/s.png"
-    }
-  ].forEach(handleAddElementXY)
-},[])
+  const [showLayerPanel, setShowLayerPanel] = useState(true);
+  const [layers, setLayers] = useState([]);
+
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
   };
@@ -436,7 +362,7 @@ useEffect(() =>{
   const handleAddElementXY = ({imageUrl, x,y,height,width,rotation}) => {
     console.log({x,y})
     const img = new window.Image();
-    img.src = imageUrl;
+    img.src = "http://192.168.0.102:5000/api/images/"+imageUrl;
     img.onload = () => {
       const newElement = {
         x: x,
@@ -587,6 +513,11 @@ useEffect(() =>{
   };
 
   const handlePasteImages = (event) => {
+    // Check if the paste event target is an input or textarea
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      return; // Allow default paste behavior for input fields
+    }
+
     event.preventDefault();
     const items = (event.clipboardData || event.originalEvent.clipboardData).items;
     const imageItems = [];
@@ -650,14 +581,109 @@ useEffect(() =>{
   };
 
   useEffect(() => {
-    document.addEventListener('paste', handlePasteImages);
+    const pasteHandler = (e) => {
+      // Only handle paste events on the document body
+      if (e.target === document.body) {
+        handlePasteImages(e);
+      }
+    };
+
+    document.body.addEventListener('paste', pasteHandler);
     return () => {
-      document.removeEventListener('paste', handlePasteImages);
+      document.body.removeEventListener('paste', pasteHandler);
     };
   }, []);
 
+  const handleDeleteFrame = (id) => {
+    setFrames(frames.filter(frame => frame.id !== id));
+    if (selectedId === id) {
+      selectShape(null);
+    }
+  };
+
+  const handleDeleteElement = (id) => {
+    setElements(elements.filter(element => element.id !== id));
+    if (selectedId === id) {
+      selectShape(null);
+    }
+  };
+
+  const toggleLayerPanel = () => {
+    setShowLayerPanel(!showLayerPanel);
+  };
+
+  const moveLayer = (index, direction) => {
+    const newLayers = [...layers];
+    const [removed] = newLayers.splice(index, 1);
+    newLayers.splice(index + direction, 0, removed);
+    setLayers(newLayers);
+    updateCanvasOrder(newLayers);
+  };
+
+  const toggleLayerVisibility = (index) => {
+    const newLayers = [...layers];
+    newLayers[index].visible = !newLayers[index].visible;
+    setLayers(newLayers);
+    updateCanvasVisibility(newLayers);
+  };
+
+  const updateCanvasOrder = (newLayers) => {
+    const updatedFrames = newLayers.filter(layer => layer.type === 'frame').map(layer => layer.data);
+    const updatedElements = newLayers.filter(layer => layer.type === 'element').map(layer => layer.data);
+    setFrames(updatedFrames);
+    setElements(updatedElements);
+  };
+
+  const updateCanvasVisibility = (newLayers) => {
+    setFrames(prevFrames => prevFrames.map(frame => {
+      const layer = newLayers.find(l => l.type === 'frame' && l.data.id === frame.id);
+      return { ...frame, visible: layer ? layer.visible : true };
+    }));
+    setElements(prevElements => prevElements.map(element => {
+      const layer = newLayers.find(l => l.type === 'element' && l.data.id === element.id);
+      return { ...element, visible: layer ? layer.visible : true };
+    }));
+  };
+
+  useEffect(() => {
+    const combinedLayers = [
+      ...frames.map(frame => ({ type: 'frame', data: frame, visible: frame.visible !== false })),
+      ...elements.map(element => ({ type: 'element', data: element, visible: element.visible !== false }))
+    ];
+    setLayers(combinedLayers);
+  }, [frames, elements]);
+
   return (
     <div className="flex flex-row h-screen">
+      {showLayerPanel && (
+        <div className="w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+          <h3 className="text-xl font-bold mb-4">Layers</h3>
+          {layers.map((layer, index) => (
+            <div key={layer.data.id} className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <button onClick={() => toggleLayerVisibility(index)}>
+                  {layer.visible ? <FaEye /> : <FaEyeSlash />}
+                </button>
+                <span className="ml-2">{layer.type} {layer.data.id}</span>
+              </div>
+              <div>
+                <button onClick={() => moveLayer(index, -1)} disabled={index === 0}>
+                  <FaArrowUp />
+                </button>
+                <button onClick={() => moveLayer(index, 1)} disabled={index === layers.length - 1}>
+                  <FaArrowDown />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        className="absolute top-4 left-4 z-10 bg-gray-800 text-white p-2 rounded"
+        onClick={toggleLayerPanel}
+      >
+        <FaBars />
+      </button>
       <div className="flex-grow overflow-hidden bg-slate-800 relative">
         <Stage
           width={window.innerWidth}
@@ -693,35 +719,44 @@ useEffect(() =>{
                 opacity={0.3}
               />
             )}
-            {frames.map((frame, i) => (
-              <FrameComponent
-                key={frame.id}
-                shapeProps={frame}
-                isSelected={frame.id === selectedId}
-                onSelect={() => handleSelectShape(frame.id)}
-                onChange={handleShapeChange}
-                onDragMove={handleDragMove}
-                snapToGrid={snapToGrid}
-                gridSize={gridSize}
-              />
-            ))}
-            {elements.map((element, i) => (
-              <ElementComponent
-                key={element.id}
-                elementProps={element}
-                isSelected={element.id === selectedId}
-                onSelect={() => handleSelectShape(element.id)}
-                onChange={handleElementChange}
-                onDragMove={handleDragMove}
-                snapToGrid={snapToGrid}
-                gridSize={gridSize}
-              />
-            ))}
+            {layers.map(layer => {
+              if (!layer.visible) return null;
+              if (layer.type === 'frame') {
+                return (
+                  <FrameComponent
+                    key={layer.data.id}
+                    shapeProps={layer.data}
+                    isSelected={layer.data.id === selectedId}
+                    onSelect={() => handleSelectShape(layer.data.id)}
+                    onChange={handleShapeChange}
+                    onDragMove={handleDragMove}
+                    snapToGrid={snapToGrid}
+                    gridSize={gridSize}
+                    onDelete={handleDeleteFrame}
+                  />
+                );
+              } else if (layer.type === 'element') {
+                return (
+                  <ElementComponent
+                    key={layer.data.id}
+                    elementProps={layer.data}
+                    isSelected={layer.data.id === selectedId}
+                    onSelect={() => handleSelectShape(layer.data.id)}
+                    onChange={handleElementChange}
+                    onDragMove={handleDragMove}
+                    snapToGrid={snapToGrid}
+                    gridSize={gridSize}
+                    onDelete={handleDeleteElement}
+                  />
+                );
+              }
+              return null;
+            })}
           </Layer>
         </Stage>
       </div>
       <div className="p-4 bg-gray-200 overflow-y-auto" style={{ width: '300px' }}>
-        <div className="flex justify-between mb-4">
+        <div className="flex justify-between flex-col mb-4">
           <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleExtendCanvas}>
             Extend Canvas
           </button>
@@ -743,6 +778,16 @@ useEffect(() =>{
               className="mr-2"
             />
             <label htmlFor="zoomToggle">Enable Zoom & Pan</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              id="elementArray"
+              type='text'
+              defaultValue={JSON.stringify(elements)}
+            onChange={(e) => {console.log(e.target.value);try{JSON.parse(e.target.value).forEach(handleAddElementXY)}catch{setElements([])}}}
+              className="mr-2"
+            />
+            <label htmlFor="elementArray">ELEMENTS {JSON.stringify(elements)}</label>
           </div>
         </div>
         <div className="mb-4">
