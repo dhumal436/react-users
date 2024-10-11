@@ -1,75 +1,35 @@
 import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-const CanvasRenderer = ({ jsonData }) => {
-  if (!jsonData || !jsonData.elements) {
-    return <div>No canvas data available</div>;
-  }
+const FrameVisualization = ({ frames }) => {
+  console.log(frames)
+  const data = frames.map((frame, index) => ({
+    name: `Frame ${index + 1}`,
+    x: frame.x,
+    y: frame.y,
+    width: frame.width,
+    height: frame.height,
+    rotation: frame.rotation,
+  }));
 
   return (
-    <div className="relative w-full h-full bg-white">
-      {jsonData.elements.map((element, index) => {
-        const commonStyles = {
-          position: 'absolute',
-          left: `${element.x}px`,
-          top: `${element.y}px`,
-          width: `${element.width}px`,
-          height: `${element.height}px`,
-          backgroundColor: element.backgroundColor,
-          color: element.color,
-          fontSize: element.fontSize,
-          fontFamily: element.fontFamily,
-          zIndex: element.zIndex,
-          opacity: element.opacity,
-          transform: element.transform,
-          border: element.border,
-          borderRadius: element.borderRadius,
-        };
-
-        switch (element.type) {
-          case 'img':
-            return (
-              <img
-                key={index}
-                src={element.src}
-                alt="Canvas element"
-                style={commonStyles}
-                className="object-cover"
-              />
-            );
-          case 'text':
-            return (
-              <div
-                key={index}
-                style={commonStyles}
-                className="overflow-hidden"
-              >
-                {element.text}
-              </div>
-            );
-          case 'svg':
-          case 'path':
-            // Handle SVG elements if needed
-            return (
-              <div
-                key={index}
-                style={commonStyles}
-                className="svg-container"
-              />
-            );
-          default:
-            return (
-              <div
-                key={index}
-                style={commonStyles}
-                className="overflow-hidden"
-              >
-                {element.text}
-              </div>
-            );
-        }
-      })}
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Frame and Element Visualization</h2>
+      <LineChart width={600} height={400} data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+        <Tooltip />
+        <Legend />
+        <Line yAxisId="left" type="monotone" dataKey="x" stroke="#8884d8" />
+        <Line yAxisId="left" type="monotone" dataKey="y" stroke="#82ca9d" />
+        <Line yAxisId="right" type="monotone" dataKey="width" stroke="#ffc658" />
+        <Line yAxisId="right" type="monotone" dataKey="height" stroke="#ff7300" />
+        <Line yAxisId="right" type="monotone" dataKey="rotation" stroke="#00C49F" />
+      </LineChart>
     </div>
   );
 };
 
-export default CanvasRenderer;
+export default FrameVisualization;

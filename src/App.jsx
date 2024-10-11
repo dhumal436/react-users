@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group, Text } from 'react-konva';
-import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars, FaExchangeAlt } from 'react-icons/fa';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import CanvasRenderer from './CanvaRendere';
 // import elementImages from './elementImages';
 const elementImages = [
   {
@@ -56,6 +58,7 @@ function randomColorFromPalette() {
   // Return the color in RGBA format
   return `rgba(${randomR}, ${randomG}, ${randomB}, ${randomA})`;
 }
+
 
 const Grid = ({ width, height, mainGridColor, thirdsGridColor, gridSize }) => {
   const lines = [];
@@ -187,8 +190,9 @@ const FrameComponent = ({ shapeProps, isSelected, onSelect, onChange, onDragMove
             rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
             rotationSnapTolerance={5}
           />
+         
           <Text
-            text="×"
+            text={shapeProps.rotation + "X"}
             x={shapeProps.x + shapeProps.width - 20}
             y={shapeProps.y}
             fontSize={20}
@@ -216,6 +220,21 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
   const snapSizeToGrid = (size) => {
     return Math.round(size / gridSize) * gridSize;
   };
+
+  const handleFlipHorizontal = () => {
+    onChange({
+      ...elementProps,
+      scaleX: -elementProps.scaleX ?? -1,
+    });
+  };
+
+  const handleFlipVertical = () => {
+    onChange({
+      ...elementProps,
+      scaleY: -elementProps.scaleY,
+    });
+  };
+
   return (
     <>
       <KonvaImage
@@ -246,7 +265,6 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
 
           node.scaleX(1);
           node.scaleY(1);
-
           const snappedPos = snapToGrid({ x: node.x(), y: node.y() });
           const snappedWidth = snapSizeToGrid(Math.max(5, node.width() * scaleX));
           const snappedHeight = snapSizeToGrid(Math.max(5, node.height() * scaleY));
@@ -260,6 +278,8 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
             rotation: node.rotation(),
           });
         }}
+        scaleX={elementProps.scaleX || 1}
+        scaleY={elementProps.scaleY || 1}
       />
 
       {isSelected && (
@@ -277,8 +297,10 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
             rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
             rotationSnapTolerance={5}
           />
+          <Group>
+
           <Text
-            text="×"
+            text={elementProps.rotation + "X"}
             x={elementProps.x + elementProps.width - 20}
             y={elementProps.y}
             fontSize={20}
@@ -286,6 +308,41 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
             onClick={() => onDelete(elementProps.id)}
             onTap={() => onDelete(elementProps.id)}
           />
+            <Rect
+              x={elementProps.x}
+              y={elementProps.y - 30}
+              width={30}
+              height={30}
+              fill="white"
+              stroke="black"
+              strokeWidth={1}
+            />
+            <Text
+              text="↔"
+              x={elementProps.x + 5}
+              y={elementProps.y - 25}
+              fontSize={20}
+              onClick={handleFlipHorizontal}
+              onTap={handleFlipHorizontal}
+            />
+            <Rect
+              x={elementProps.x + 35}
+              y={elementProps.y - 30}
+              width={30}
+              height={30}
+              fill="white"
+              stroke="black"
+              strokeWidth={1}
+            />
+            <Text
+              text="↕"
+              x={elementProps.x + 40}
+              y={elementProps.y - 25}
+              fontSize={20}
+              onClick={handleFlipVertical}
+              onTap={handleFlipVertical}
+            />
+          </Group>
         </>
       )}
     </>
@@ -294,7 +351,6 @@ const ElementComponent = ({ elementProps, isSelected, onSelect, onChange, onDrag
 
 const TemplateCreator = () => {
   const [canvasWidth, setCanvasWidth] = useState(CANVAS_WIDTH);
-  const [frames, setFrames] = useState([]);
   const [selectedId, selectShape] = useState(null);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -306,10 +362,10 @@ const TemplateCreator = () => {
   const [gridSize, setGridSize] = useState(60);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
-  const [elements, setElements] = useState([]);
   const [pastedImages, setPastedImages] = useState([]);
   const [showLayerPanel, setShowLayerPanel] = useState(true);
   const [layers, setLayers] = useState([]);
+  const [shapes, setShapes] = useState([]);
 
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
@@ -322,24 +378,20 @@ const TemplateCreator = () => {
       width: gridSize * 2,
       height: gridSize * 2,
       rotation: 0,
-      backgroundColor:randomColorFromPalette(),
-      id: `frame-${frames.length + 1}`,
+      backgroundColor: randomColorFromPalette(),
+      id: `frame-${shapes.length + 1}`,
+      type: 'frame',
     };
-    setFrames([...frames, newFrame]);
+    setShapes([...shapes, newFrame]);
   };
 
   const handleSelectShape = (id) => {
     selectShape(id);
-  };
-
-  const handleShapeChange = (newAttrs) => {
-    const updatedFrames = frames.map((frame) => {
-      if (frame.id === newAttrs.id) {
-        return newAttrs;
-      }
-      return frame;
-    });
-    setFrames(updatedFrames);
+    // Scroll the layer panel to the selected shape
+    const layerElement = document.getElementById(`layer-${id}`);
+    if (layerElement) {
+      layerElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   };
 
   const handleAddElement = (imageUrl) => {
@@ -353,16 +405,33 @@ const TemplateCreator = () => {
         height: img.height,
         rotation: 0,
         image: img,
-        id: `element-${elements.length + 1}`,
+        id: `${imageUrl}-${shapes.length + 1}`,
+        type: 'element',
+        imageUrl: imageUrl,
       };
-      setElements([...elements, newElement]);
+      setShapes([...shapes, newElement]);
     };
   };
 
   const handleAddElementXY = ({imageUrl, x,y,height,width,rotation}) => {
-    console.log({x,y})
     const img = new window.Image();
-    img.src = "http://192.168.0.102:5000/api/images/"+imageUrl;
+    if(imageUrl.includes('svg')){
+      img.style.backgroundImage = `url(${"http://localhost:5000/api/images/"+imageUrl}), none`
+      const newElement = {
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        rotation: rotation,
+        image: img,
+        id: `${imageUrl}${shapes.length + 1}`,
+        type: 'element',
+        imageUrl: imageUrl,
+      };
+      shapes.push(newElement)
+      return;
+    }
+    img.src = "http://localhost:5000/api/images/"+imageUrl;
     img.onload = () => {
       const newElement = {
         x: x,
@@ -371,43 +440,49 @@ const TemplateCreator = () => {
         height: height,
         rotation: rotation,
         image: img,
-        id: `element-${elements.length + 1}`,
+        id: `${imageUrl}${shapes.length + 1}`,
+        type: 'element',
+        imageUrl: imageUrl,
       };
-      elements.push(newElement)
-      // setElements([...elements, newElement]);
+      shapes.push(newElement)
+      // setShapes([...shapes, newElement]);
     };
   };
 
-
-  const handleElementChange = (newAttrs) => {
-    const updatedElements = elements.map((element) => {
-      if (element.id === newAttrs.id) {
-        return newAttrs;
+  const handleShapeChange = (newAttrs) => {
+    const updatedShapes = shapes.map((shape) => {
+      if (shape.id === newAttrs.id) {
+        return { ...shape, ...newAttrs };
       }
-      return element;
+      return shape;
     });
-    setElements(updatedElements);
+    setShapes(updatedShapes);
+  };
+
+  const handleDeleteShape = (id) => {
+    setShapes(shapes.filter(shape => shape.id !== id));
+    if (selectedId === id) {
+      selectShape(null);
+    }
   };
 
   const generateJSON = () => {
     const template = {
+      id: 1,
       name: "Custom Template",
       panels: Math.ceil(canvasWidth / CANVAS_WIDTH),
-      frames: frames.map((frame) => ({
-        x: frame.x / canvasWidth,
-        y: frame.y / CANVAS_HEIGHT,
-        width: Math.ceil(frame.width),
-        height: Math.ceil(frame.height),
-        rotation: frame.rotation,
-      })),
-      elements: elements.map((element) => ({
-        x: element.x / canvasWidth,
-        y: element.y / CANVAS_HEIGHT,
-        width: Math.ceil(element.width),
-        height: Math.ceil(element.height),
-        rotation: element.rotation,
-        imageUrl: element.image.src,
-      })),
+      frames: shapes.map((shape) => 
+        {
+        return(
+        {
+        x: shape.x ,
+        y: shape.y,
+        width: Math.ceil(shape.width),
+        height: Math.ceil(shape.height),
+        rotation: shape.rotation,
+        type: shape.type,
+        ...(shape.type === 'element' && { imageUrl: shape.imageUrl }),
+      })}),
     };
     return JSON.stringify([template], null, 2);
   };
@@ -496,7 +571,7 @@ const TemplateCreator = () => {
   };
 
   const handleDragMove = (e, snappedPos) => {
-    console.log("Dragging to:", snappedPos);
+    // console.log("Dragging to:", snappedPos);
   };
 
   const handleImageDragStart = () => {
@@ -594,20 +669,6 @@ const TemplateCreator = () => {
     };
   }, []);
 
-  const handleDeleteFrame = (id) => {
-    setFrames(frames.filter(frame => frame.id !== id));
-    if (selectedId === id) {
-      selectShape(null);
-    }
-  };
-
-  const handleDeleteElement = (id) => {
-    setElements(elements.filter(element => element.id !== id));
-    if (selectedId === id) {
-      selectShape(null);
-    }
-  };
-
   const toggleLayerPanel = () => {
     setShowLayerPanel(!showLayerPanel);
   };
@@ -628,55 +689,78 @@ const TemplateCreator = () => {
   };
 
   const updateCanvasOrder = (newLayers) => {
-    const updatedFrames = newLayers.filter(layer => layer.type === 'frame').map(layer => layer.data);
-    const updatedElements = newLayers.filter(layer => layer.type === 'element').map(layer => layer.data);
-    setFrames(updatedFrames);
-    setElements(updatedElements);
+    const updatedShapes = newLayers.filter(layer => layer.type === 'frame' || layer.type === 'element').map(layer => layer.data);
+    setShapes(updatedShapes);
   };
 
   const updateCanvasVisibility = (newLayers) => {
-    setFrames(prevFrames => prevFrames.map(frame => {
-      const layer = newLayers.find(l => l.type === 'frame' && l.data.id === frame.id);
-      return { ...frame, visible: layer ? layer.visible : true };
-    }));
-    setElements(prevElements => prevElements.map(element => {
-      const layer = newLayers.find(l => l.type === 'element' && l.data.id === element.id);
-      return { ...element, visible: layer ? layer.visible : true };
+    setShapes(prevShapes => prevShapes.map(shape => {
+      const layer = newLayers.find(l => l.type === shape.type && l.data.id === shape.id);
+      return { ...shape, visible: layer ? layer.visible : true };
     }));
   };
 
   useEffect(() => {
-    const combinedLayers = [
-      ...frames.map(frame => ({ type: 'frame', data: frame, visible: frame.visible !== false })),
-      ...elements.map(element => ({ type: 'element', data: element, visible: element.visible !== false }))
-    ];
+    const combinedLayers = shapes.map(shape => ({
+      type: shape.type,
+      data: shape,
+      visible: shape.visible !== false
+    }));
     setLayers(combinedLayers);
-  }, [frames, elements]);
+  }, [shapes]);
+
+  const handleLayerReorder = (result) => {
+    if (!result.destination) return;
+
+    const newLayers = Array.from(layers);
+    const [reorderedItem] = newLayers.splice(result.source.index, 1);
+    newLayers.splice(result.destination.index, 0, reorderedItem);
+
+    setLayers(newLayers);
+    updateCanvasOrder(newLayers);
+  };
 
   return (
     <div className="flex flex-row h-screen">
       {showLayerPanel && (
-        <div className="w-64 bg-gray-800 text-white p-4 overflow-y-auto">
-          <h3 className="text-xl font-bold mb-4">Layers</h3>
-          {layers.map((layer, index) => (
-            <div key={layer.data.id} className="flex items-center justify-between mb-2">
-              <div className="flex items-center">
-                <button onClick={() => toggleLayerVisibility(index)}>
-                  {layer.visible ? <FaEye /> : <FaEyeSlash />}
-                </button>
-                <span className="ml-2">{layer.type} {layer.data.id}</span>
+        <DragDropContext onDragEnd={handleLayerReorder}>
+          <Droppable  type="group" droppableId="layers">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="w-64 bg-gray-800 text-white p-4 overflow-y-auto"
+              >
+                <h3 className="text-xl font-bold mb-4">Layers</h3>
+                {layers.map((layer, index) => (
+                  <Draggable key={layer.data.id} draggableId={layer.data.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        id={`layer-${layer.data.id}`}
+                        className={`flex items-center justify-between mb-2 p-2 ${
+                          layer.data.id === selectedId ? 'bg-blue-500' : ''
+                        }`}
+                        onClick={() => handleSelectShape(layer.data.id)}
+                      >
+                        <div className="flex items-center">
+                          <button onClick={() => toggleLayerVisibility(index)}>
+                            {layer.visible ? <FaEye /> : <FaEyeSlash />}
+                          </button>
+                          <span className="ml-2">{layer.type} {layer.data.id}</span>
+                        </div>
+                        <FaExchangeAlt className="cursor-move" />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
-              <div>
-                <button onClick={() => moveLayer(index, -1)} disabled={index === 0}>
-                  <FaArrowUp />
-                </button>
-                <button onClick={() => moveLayer(index, 1)} disabled={index === layers.length - 1}>
-                  <FaArrowDown />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
       <button
         className="absolute top-4 left-4 z-10 bg-gray-800 text-white p-2 rounded"
@@ -699,13 +783,7 @@ const TemplateCreator = () => {
         >
           <Layer>
             <Rect width={canvasWidth} height={CANVAS_HEIGHT} fill="gray" />
-            <Grid 
-              width={canvasWidth} 
-              height={CANVAS_HEIGHT} 
-              mainGridColor={mainGridColor} 
-              thirdsGridColor={thirdsGridColor}
-              gridSize={gridSize}
-            />
+           
             {backgroundImage && (
               <KonvaImage
                 image={backgroundImage.image}
@@ -721,7 +799,7 @@ const TemplateCreator = () => {
             )}
             {layers.map(layer => {
               if (!layer.visible) return null;
-              if (layer.type === 'frame') {
+              if (layer.data.type === 'frame') {
                 return (
                   <FrameComponent
                     key={layer.data.id}
@@ -732,26 +810,33 @@ const TemplateCreator = () => {
                     onDragMove={handleDragMove}
                     snapToGrid={snapToGrid}
                     gridSize={gridSize}
-                    onDelete={handleDeleteFrame}
+                    onDelete={handleDeleteShape}
                   />
                 );
-              } else if (layer.type === 'element') {
+              } else if (layer.data.type === 'element') {
                 return (
                   <ElementComponent
                     key={layer.data.id}
                     elementProps={layer.data}
                     isSelected={layer.data.id === selectedId}
                     onSelect={() => handleSelectShape(layer.data.id)}
-                    onChange={handleElementChange}
+                    onChange={handleShapeChange}
                     onDragMove={handleDragMove}
                     snapToGrid={snapToGrid}
                     gridSize={gridSize}
-                    onDelete={handleDeleteElement}
+                    onDelete={handleDeleteShape}
                   />
                 );
               }
               return null;
             })}
+             <Grid 
+              width={canvasWidth} 
+              height={CANVAS_HEIGHT} 
+              mainGridColor={mainGridColor} 
+              thirdsGridColor={thirdsGridColor}
+              gridSize={gridSize}
+            />
           </Layer>
         </Stage>
       </div>
@@ -783,11 +868,11 @@ const TemplateCreator = () => {
             <input
               id="elementArray"
               type='text'
-              defaultValue={JSON.stringify(elements)}
-            onChange={(e) => {console.log(e.target.value);try{JSON.parse(e.target.value).forEach(handleAddElementXY)}catch{setElements([])}}}
+              defaultValue={JSON.stringify(shapes)}
+            onChange={(e) => {try{JSON.parse(e.target.value).forEach(handleAddElementXY)}catch{setShapes([])}}}
               className="mr-2"
             />
-            <label htmlFor="elementArray">ELEMENTS {JSON.stringify(elements)}</label>
+            <label htmlFor="elementArray">ELEMENTS {JSON.stringify(shapes)}</label>
           </div>
         </div>
         <div className="mb-4">
@@ -912,3 +997,6 @@ const TemplateCreator = () => {
 
 
 export default TemplateCreator;
+
+
+
