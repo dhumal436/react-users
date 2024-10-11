@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group, Text } from 'react-konva';
-import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars, FaExchangeAlt } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars, FaExchangeAlt, FaTrash, FaEdit, FaLock, FaUnlock } from 'react-icons/fa';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import CanvasRenderer from './CanvaRendere';
 // import elementImages from './elementImages';
@@ -366,6 +366,7 @@ const TemplateCreator = () => {
   const [showLayerPanel, setShowLayerPanel] = useState(true);
   const [layers, setLayers] = useState([]);
   const [shapes, setShapes] = useState([]);
+  const [sidebarTab, setSidebarTab] = useState('layers'); // New state for sidebar tabs
 
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
@@ -723,44 +724,138 @@ const TemplateCreator = () => {
   return (
     <div className="flex flex-row h-screen">
       {showLayerPanel && (
-        <DragDropContext onDragEnd={handleLayerReorder}>
-          <Droppable  type="group" droppableId="layers">
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="w-64 bg-gray-800 text-white p-4 overflow-y-auto"
-              >
-                <h3 className="text-xl font-bold mb-4">Layers</h3>
-                {layers.map((layer, index) => (
-                  <Draggable key={layer.data.id} draggableId={layer.data.id} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        id={`layer-${layer.data.id}`}
-                        className={`flex items-center justify-between mb-2 p-2 ${
-                          layer.data.id === selectedId ? 'bg-blue-500' : ''
-                        }`}
-                        onClick={() => handleSelectShape(layer.data.id)}
-                      >
-                        <div className="flex items-center">
-                          <button onClick={() => toggleLayerVisibility(index)}>
-                            {layer.visible ? <FaEye /> : <FaEyeSlash />}
-                          </button>
-                          <span className="ml-2">{layer.type} {layer.data.id}</span>
-                        </div>
-                        <FaExchangeAlt className="cursor-move" />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+        <div className="w-64 bg-gray-800 text-white flex flex-col">
+          <div className="flex border-b border-gray-700">
+            <button
+              className={`flex-1 py-2 ${sidebarTab === 'layers' ? 'bg-gray-700' : ''}`}
+              onClick={() => setSidebarTab('layers')}
+            >
+              Layers
+            </button>
+            <button
+              className={`flex-1 py-2 ${sidebarTab === 'settings' ? 'bg-gray-700' : ''}`}
+              onClick={() => setSidebarTab('settings')}
+            >
+              Settings
+            </button>
+          </div>
+          {sidebarTab === 'layers' && (
+            <DragDropContext onDragEnd={handleLayerReorder}>
+              <Droppable type="group" droppableId="layers">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="flex-grow overflow-y-auto p-4"
+                  >
+                    {layers.map((layer, index) => (
+                      <Draggable key={layer.data.id} draggableId={layer.data.id} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            id={`layer-${layer.data.id}`}
+                            className={`flex items-center justify-between mb-2 p-2 rounded ${
+                              layer.data.id === selectedId ? 'bg-blue-500' : 'bg-gray-700'
+                            } hover:bg-gray-600 transition-colors duration-200`}
+                            onClick={() => handleSelectShape(layer.data.id)}
+                          >
+                            <div className="flex items-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleLayerVisibility(index);
+                                }}
+                                className="mr-2 hover:text-yellow-400 transition-colors duration-200"
+                              >
+                                {layer.visible ? <FaEye /> : <FaEyeSlash />}
+                              </button>
+                              <span className="truncate">{layer.type} {layer.data.id}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Implement edit functionality
+                                }}
+                                className="mr-2 hover:text-blue-400 transition-colors duration-200"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Implement lock functionality
+                                }}
+                                className="mr-2 hover:text-green-400 transition-colors duration-200"
+                              >
+                                <FaLock />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteShape(layer.data.id);
+                                }}
+                                className="hover:text-red-400 transition-colors duration-200"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          )}
+          {sidebarTab === 'settings' && (
+            <div className="flex-grow overflow-y-auto p-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Grid Size</label>
+                <input
+                  type="number"
+                  value={gridSize}
+                  onChange={(e) => setGridSize(Math.max(10, parseInt(e.target.value)))}
+                  className="w-full bg-gray-700 text-white px-3 py-2 rounded"
+                  min="10"
+                />
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Main Grid Color</label>
+                <input
+                  type="color"
+                  value={mainGridColor}
+                  onChange={(e) => setMainGridColor(e.target.value)}
+                  className="w-full h-10 bg-gray-700 rounded"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Thirds Grid Color</label>
+                <input
+                  type="color"
+                  value={thirdsGridColor}
+                  onChange={(e) => setThirdsGridColor(e.target.value)}
+                  className="w-full h-10 bg-gray-700 rounded"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={isZoomEnabled}
+                    onChange={toggleZoom}
+                    className="mr-2"
+                  />
+                  <span>Enable Zoom & Pan</span>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
       )}
       <button
         className="absolute top-4 left-4 z-10 bg-gray-800 text-white p-2 rounded"
@@ -885,34 +980,6 @@ const TemplateCreator = () => {
         </div>
         <div>
           {"x:"+position.x + "-y:"+ position.y}
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Grid Size</label>
-          <input
-            type="number"
-            value={gridSize}
-            onChange={(e) => setGridSize(Math.max(10, parseInt(e.target.value)))}
-            className="mt-1 block w-full"
-            min="10"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Main Grid Color</label>
-          <input
-            type="color"
-            value={mainGridColor}
-            onChange={(e) => setMainGridColor(e.target.value)}
-            className="mt-1 block w-full"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Thirds Grid Color</label>
-          <input
-            type="color"
-            value={thirdsGridColor}
-            onChange={(e) => setThirdsGridColor(e.target.value)}
-            className="mt-1 block w-full"
-          />
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Upload Image</label>
