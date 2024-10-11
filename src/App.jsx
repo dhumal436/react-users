@@ -3,6 +3,7 @@ import { Stage, Layer, Rect, Transformer, Image as KonvaImage, Line, Group, Text
 import { FaEye, FaEyeSlash, FaArrowUp, FaArrowDown, FaBars, FaExchangeAlt, FaTrash, FaEdit, FaLock, FaUnlock } from 'react-icons/fa';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import CanvasRenderer from './CanvaRendere';
+import axios from 'axios';
 // import elementImages from './elementImages';
 const elementImages = [
   {
@@ -367,6 +368,9 @@ const TemplateCreator = () => {
   const [layers, setLayers] = useState([]);
   const [shapes, setShapes] = useState([]);
   const [sidebarTab, setSidebarTab] = useState('layers'); // New state for sidebar tabs
+  const [pixabayImages, setPixabayImages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleExtendCanvas = () => {
     setCanvasWidth(canvasWidth + CANVAS_WIDTH);
@@ -721,6 +725,17 @@ const TemplateCreator = () => {
     updateCanvasOrder(newLayers);
   };
 
+  const searchPixabay = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`https://pixabay.com/api/?key=API_KEY&q=${encodeURIComponent(searchQuery)}&image_type=photo&per_page=20`);
+      setPixabayImages(response.data.hits);
+    } catch (error) {
+      console.error('Error fetching images from Pixabay:', error);
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="flex flex-row h-screen">
       {showLayerPanel && (
@@ -842,6 +857,16 @@ const TemplateCreator = () => {
                   className="w-full h-10 bg-gray-700 rounded"
                 />
               </div>
+              <div className="flex items-center">
+            <input
+              id="elementArray"
+              type='text'
+              defaultValue={JSON.stringify(shapes)}
+            onChange={(e) => {try{JSON.parse(e.target.value).forEach(handleAddElementXY)}catch{setShapes([])}}}
+              className="mr-2"
+            />
+            <label htmlFor="elementArray">ELEMENTS {JSON.stringify(shapes)}</label>
+          </div>
               <div className="mb-4">
                 <label className="flex items-center">
                   <input
@@ -935,104 +960,85 @@ const TemplateCreator = () => {
           </Layer>
         </Stage>
       </div>
-      <div className="p-4 bg-gray-200 overflow-y-auto" style={{ width: '300px' }}>
-        <div className="flex justify-between flex-col mb-4">
-          <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleExtendCanvas}>
-            Extend Canvas
-          </button>
-          <button className="bg-green-500 text-white px-4 py-2 rounded" onClick={handleAddFrame}>
-            Add Frame
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleBackgroundImageUpload}
-            className="bg-purple-500 text-white px-4 py-2 rounded"
-          />
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="zoomToggle"
-              checked={isZoomEnabled}
-              onChange={toggleZoom}
-              className="mr-2"
-            />
-            <label htmlFor="zoomToggle">Enable Zoom & Pan</label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="elementArray"
-              type='text'
-              defaultValue={JSON.stringify(shapes)}
-            onChange={(e) => {try{JSON.parse(e.target.value).forEach(handleAddElementXY)}catch{setShapes([])}}}
-              className="mr-2"
-            />
-            <label htmlFor="elementArray">ELEMENTS {JSON.stringify(shapes)}</label>
+      <div className="w-80 bg-gray-100 overflow-y-auto flex flex-col">
+        <div className="p-4 bg-white shadow">
+          <h2 className="text-xl font-bold mb-4">Template Creator Tools</h2>
+          <div className="space-y-4">
+            <button className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors" onClick={handleExtendCanvas}>
+              Extend Canvas
+            </button>
+            <button className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors" onClick={handleAddFrame}>
+              Add Frame
+            </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBackgroundImageUpload}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="zoomToggle"
+                checked={isZoomEnabled}
+                onChange={toggleZoom}
+                className="mr-2"
+              />
+              <label htmlFor="zoomToggle" className="text-sm">Enable Zoom & Pan</label>
+            </div>
           </div>
         </div>
-        <div className="mb-4">
-          <span>Zoom: {Math.round(scale * 100)}%</span>
-          {isZoomEnabled && (
-            <span className="ml-4">
-              Position: ({Math.round(position.x)}, {Math.round(position.y)})
-            </span>
+
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-2">Search Elements</h3>
+          <div className="flex mb-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-grow border rounded-l px-2 py-1"
+              placeholder="Search Pixabay..."
+            />
+            <button
+              onClick={searchPixabay}
+              className="bg-blue-500 text-white px-4 py-1 rounded-r hover:bg-blue-600 transition-colors"
+            >
+              Search
+            </button>
+          </div>
+          {isLoading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {pixabayImages.map((image) => (
+                <img
+                  key={image.id}
+                  src={image.previewURL}
+                  alt={image.tags}
+                  className="w-full h-auto cursor-pointer border border-gray-300 hover:border-blue-500 transition-colors"
+                  onClick={() => handleAddElement(image.largeImageURL)}
+                />
+              ))}
+            </div>
           )}
         </div>
-        <div>
-          {"x:"+position.x + "-y:"+ position.y}
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Upload Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleBackgroundImageUpload}
-            className="mt-1 block w-full"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Image URL</label>
-          <input
-            type="text"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="mt-1 block w-full border rounded-md shadow-sm"
-            placeholder="Enter image URL"
-          />
-          <button
-            onClick={loadImageFromUrl}
-            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Load Image from URL
-          </button>
-        </div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Add Elements</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {elementImages.map((image, index) => (
-              <img
-                key={index}
-                src={image.url}
-                alt={image.name}
-                className="w-full h-auto cursor-pointer border border-gray-300 hover:border-blue-500"
-                onClick={() => handleAddElement(image.url)}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="mb-4">
+
+        <div className="p-4 bg-white shadow mt-4">
           <h3 className="text-lg font-semibold mb-2">Pasted Images</h3>
           <p className="text-sm text-gray-600 mb-2">
             Copy images or HTML elements with images from any website and paste them here (Ctrl+V or Cmd+V)
           </p>
-          {pastedImages.length > 0 && (
-            <div className="mb-2">
+          {pastedImages.length > 0 ? (
+            <div className="space-y-2">
               {pastedImages.map((imageUrl, index) => (
-                <div key={index} className="mb-2">
-                  <img src={imageUrl} alt={`Pasted ${index}`} className="w-full h-auto" />
+                <div key={index} className="border rounded p-2">
+                  <img src={imageUrl} alt={`Pasted ${index}`} className="w-full h-auto mb-2" />
                   <button
                     onClick={() => addPastedImage(imageUrl)}
-                    className="mt-2 bg-blue-500 text-white px-4 py-2 rounded w-full"
+                    className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
                   >
                     Add This Image
                   </button>
@@ -1040,23 +1046,26 @@ const TemplateCreator = () => {
               ))}
               <button
                 onClick={addAllPastedImages}
-                className="mt-2 bg-green-500 text-white px-4 py-2 rounded w-full"
+                className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
               >
                 Add All Images
               </button>
             </div>
-          )}
-          {pastedImages.length === 0 && (
-            <div className="border-2 border-dashed border-gray-300 p-4 text-center">
-              <Text text="Paste your images here" />
+          ) : (
+            <div className="border-2 border-dashed border-gray-300 p-4 text-center text-gray-500">
+              Paste your images here
             </div>
           )}
         </div>
-        <textarea
-          className="w-full h-40 p-2 border rounded"
-          value={generateJSON()}
-          readOnly
-        />
+
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-2">Generated JSON</h3>
+          <textarea
+            className="w-full h-40 p-2 border rounded text-sm font-mono"
+            value={generateJSON()}
+            readOnly
+          />
+        </div>
       </div>
     </div>
   );
@@ -1064,6 +1073,3 @@ const TemplateCreator = () => {
 
 
 export default TemplateCreator;
-
-
-
